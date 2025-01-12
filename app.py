@@ -1,10 +1,10 @@
 from flask import Flask, request, render_template
-import subprocess
-import json
+from transformers import pipeline
 
 app = Flask(__name__)
 
-OLLAMA_MODEL_NAME = "phi3"
+# Load the Hugging Face sentiment analysis model
+sentiment_analyzer = pipeline("sentiment-analysis")
 
 @app.route("/")
 def home():
@@ -13,24 +13,27 @@ def home():
 @app.route("/predict", methods=["POST"])
 def predict():
     input_text = request.form["text"]
-    prompt = f"Analyze the sentiment of the following text and classify it as Negative, Neutral, or Positive: '{input_text}'"
 
     try:
-        # Run Ollama using subprocess
-        result = subprocess.run(
-            ["ollama", "run", OLLAMA_MODEL_NAME],
-            input=prompt,
-            text=True,
-            capture_output=True,
-            check=True
-        )
+        # Perform sentiment analysis
+        result = sentiment_analyzer(input_text)[0]
+        sentiment = result["label"]  # Sentiment label (e.g., POSITIVE, NEGATIVE)
 
-        # Extract response from subprocess output
-        sentiment = result.stdout.strip()
+        # Map Hugging Face labels to your desired format
+        sentiment_mapping = {
+            "LABEL_0": "Negative",
+            "LABEL_1": "Neutral",
+            "LABEL_2": "Positive",
+            "NEGATIVE": "Negative",
+            "POSITIVE": "Positive",
+            "NEUTRAL": "Neutral",
+        }
+        sentiment = sentiment_mapping.get(sentiment.upper(), sentiment)
+
         return render_template("result.html", text=input_text, sentiment=sentiment)
 
-    except subprocess.CalledProcessError as e:
-        return f"An error occurred while running Ollama: {e.stderr}"
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
 
 if __name__ == "__main__":
     app.run(debug=True)
