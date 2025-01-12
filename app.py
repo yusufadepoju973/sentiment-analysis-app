@@ -1,6 +1,5 @@
 from flask import Flask, request, render_template
 from transformers import pipeline
-import logging
 
 app = Flask(__name__)
 
@@ -16,27 +15,16 @@ def test():
     return "App is running!"
 
 
-
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-
 @app.route("/predict", methods=["POST"])
 def predict():
+    input_text = request.form["text"]
+
     try:
-        # Get input text from the form
-        input_text = request.form.get("text", "").strip()
-        logging.info(f"Received input: {input_text}")
-
-        if not input_text:
-            return "Error: No input text provided", 400
-
         # Perform sentiment analysis
         result = sentiment_analyzer(input_text)[0]
-        logging.info(f"Sentiment analysis result: {result}")
-
-        # Extract sentiment
         sentiment = result["label"]  # Sentiment label (e.g., POSITIVE, NEGATIVE)
+
+        # Map Hugging Face labels to your desired format
         sentiment_mapping = {
             "LABEL_0": "Negative",
             "LABEL_1": "Neutral",
@@ -47,13 +35,10 @@ def predict():
         }
         sentiment = sentiment_mapping.get(sentiment.upper(), sentiment)
 
-        # Render result.html
         return render_template("result.html", text=input_text, sentiment=sentiment)
 
     except Exception as e:
-        logging.error(f"Error in /predict route: {e}", exc_info=True)
-        return "Internal Server Error", 500
-
+        return f"An error occurred: {str(e)}"
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
