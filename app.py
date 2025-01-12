@@ -23,6 +23,7 @@ def predict():
         # Perform sentiment analysis
         result = sentiment_analyzer(input_text)[0]
         sentiment = result["label"]  # Sentiment label (e.g., POSITIVE, NEGATIVE)
+        confidence = round(result["score"] * 100, 2)  # Confidence score in percentage
 
         # Map Hugging Face labels to your desired format
         sentiment_mapping = {
@@ -35,10 +36,11 @@ def predict():
         }
         sentiment = sentiment_mapping.get(sentiment.upper(), sentiment)
 
-        return render_template("result.html", text=input_text, sentiment=sentiment)
+        return render_template("result.html", text=input_text, sentiment=sentiment, confidence=confidence)
 
     except Exception as e:
         return f"An error occurred: {str(e)}"
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
